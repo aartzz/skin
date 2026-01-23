@@ -4,7 +4,7 @@ const sharp = require('sharp');
 const NodeCache = require('node-cache');
 
 const app = express();
-const PORT = 3000;
+const PORT = 3040;
 
 // Кешуємо дані текстур на 1 годину, а готові картинки на 10 хвилин
 const cache = new NodeCache({ stdTTL: 600 });
