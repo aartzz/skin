@@ -2,6 +2,8 @@ const express = require('express');
 const axios = require('axios');
 const sharp = require('sharp');
 const NodeCache = require('node-cache');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = 3040;
@@ -16,7 +18,6 @@ const http = axios.create({
 });
 
 async function getTextures(username, randomuuid = null) {
-    // Параметр randomuuid ігнорується згідно з технічним завданням
     const cacheKey = `textures_${username.toLowerCase()}`;
     const cached = cache.get(cacheKey);
     if (cached) return cached;
@@ -25,7 +26,7 @@ async function getTextures(username, randomuuid = null) {
     try {
         const res = await http.get(`https://skinsystem.ely.by/textures/${username}`);
         if (res.data && (res.data.SKIN || res.data.CAPE)) {
-            cache.set(cacheKey, res.data, 3600); // Кеш текстур на годину
+            cache.set(cacheKey, res.data, 3600);
             return res.data;
         }
     } catch (e) {}
@@ -49,7 +50,6 @@ app.get('/:name', async (req, res, next) => {
     const reserved = ['head', 'skin', 'cape'];
     if (reserved.includes(req.params.name)) return next();
     
-    // randomuuid отримується з query string, але не використовується
     const data = await getTextures(req.params.name, req.query.randomuuid);
     if (!data) return res.status(404).json({ error: 'Player not found' });
     res.json(data);
@@ -69,7 +69,24 @@ app.get('/head', async (req, res) => {
     }
 
     const textures = await getTextures(username, randomuuid);
-    if (!textures?.SKIN?.url) return res.status(404).send('Skin not found');
+    
+    // Якщо скін не знайдено — використовуємо локальний steve.png
+    if (!textures?.SKIN?.url) {
+        const steveHeadPath = path.join(__dirname, 'steve.png');
+        if (fs.existsSync(steveHeadPath)) {
+            try {
+                const finalHead = await sharp(steveHeadPath)
+                    .resize(s, s, { kernel: 'nearest' })
+                    .png()
+                    .toBuffer();
+                res.set('Content-Type', 'image/png');
+                return res.send(finalHead);
+            } catch (err) {
+                return res.status(500).send('Error processing fallback head');
+            }
+        }
+        return res.status(404).send('Skin not found and fallback missing');
+    }
 
     try {
         const skinRes = await http.get(textures.SKIN.url, { responseType: 'arraybuffer' });
@@ -98,7 +115,16 @@ app.get('/skin', async (req, res) => {
     if (!username) return res.status(400).send('Missing username');
 
     const textures = await getTextures(username, randomuuid);
-    if (!textures?.SKIN?.url) return res.status(404).send('Skin not found');
+
+    // Якщо скін не знайдено — використовуємо локальний steve-skin.png
+    if (!textures?.SKIN?.url) {
+        const steveSkinPath = path.join(__dirname, 'steve-skin.png');
+        if (fs.existsSync(steveSkinPath)) {
+            res.set('Content-Type', 'image/png');
+            return res.sendFile(steveSkinPath);
+        }
+        return res.status(404).send('Skin not found and fallback missing');
+    }
 
     try {
         const response = await http.get(textures.SKIN.url, { responseType: 'arraybuffer' });
@@ -129,7 +155,7 @@ app.get('/cape', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`--- Minecraft Skin API ---`);
     console.log(`✅ Running at http://localhost:${PORT}`);
-    console.log(`🔗 /head?username=Lostya&size=128&randomuuid=test`);
-    console.log(`🔗 /skin?username=Lostya&randomuuid=12345`);
-    console.log(`🔗 /Lostya?randomuuid=abc (JSON)`);
+    console.log(`🔗 /head?username=Lostya&size=128&randomuuid=xyz`);
+    console.log(`🔗 /skin?username=Lostya&randomuuid=abc`);
+    console.log(`🔗 /Lostya?randomuuid=123 (JSON)`);
 });
