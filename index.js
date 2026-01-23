@@ -15,7 +15,8 @@ const http = axios.create({
     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Minecraft-Skin-Proxy/1.0' }
 });
 
-async function getTextures(username) {
+async function getTextures(username, randomuuid = null) {
+    // Параметр randomuuid ігнорується згідно з технічним завданням
     const cacheKey = `textures_${username.toLowerCase()}`;
     const cached = cache.get(cacheKey);
     if (cached) return cached;
@@ -43,19 +44,20 @@ async function getTextures(username) {
     return null;
 }
 
-// 1. JSON Відповідь: /&name&
+// 1. JSON Відповідь: /:name
 app.get('/:name', async (req, res, next) => {
     const reserved = ['head', 'skin', 'cape'];
     if (reserved.includes(req.params.name)) return next();
     
-    const data = await getTextures(req.params.name);
+    // randomuuid отримується з query string, але не використовується
+    const data = await getTextures(req.params.name, req.query.randomuuid);
     if (!data) return res.status(404).json({ error: 'Player not found' });
     res.json(data);
 });
 
-// 2. Голова: /head?username=%name%&size=%size%
+// 2. Голова: /head?username=%name%&size=%size%&randomuuid=%uuid%
 app.get('/head', async (req, res) => {
-    const { username, size = 64 } = req.query;
+    const { username, size = 64, randomuuid } = req.query;
     if (!username) return res.status(400).send('Missing username');
 
     const s = parseInt(size);
@@ -66,7 +68,7 @@ app.get('/head', async (req, res) => {
         return res.send(cachedImg);
     }
 
-    const textures = await getTextures(username);
+    const textures = await getTextures(username, randomuuid);
     if (!textures?.SKIN?.url) return res.status(404).send('Skin not found');
 
     try {
@@ -90,12 +92,12 @@ app.get('/head', async (req, res) => {
     }
 });
 
-// 3. Скін: /skin?username=%name%
+// 3. Скін: /skin?username=%name%&randomuuid=%uuid%
 app.get('/skin', async (req, res) => {
-    const { username } = req.query;
+    const { username, randomuuid } = req.query;
     if (!username) return res.status(400).send('Missing username');
 
-    const textures = await getTextures(username);
+    const textures = await getTextures(username, randomuuid);
     if (!textures?.SKIN?.url) return res.status(404).send('Skin not found');
 
     try {
@@ -107,12 +109,12 @@ app.get('/skin', async (req, res) => {
     }
 });
 
-// 4. Плащ: /cape?username=%name%
+// 4. Плащ: /cape?username=%name%&randomuuid=%uuid%
 app.get('/cape', async (req, res) => {
-    const { username } = req.query;
+    const { username, randomuuid } = req.query;
     if (!username) return res.status(400).send('Missing username');
 
-    const textures = await getTextures(username);
+    const textures = await getTextures(username, randomuuid);
     if (!textures?.CAPE?.url) return res.status(404).send('Cape not found');
 
     try {
@@ -127,7 +129,7 @@ app.get('/cape', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`--- Minecraft Skin API ---`);
     console.log(`✅ Running at http://localhost:${PORT}`);
-    console.log(`🔗 /head?username=Lostya&size=128`);
-    console.log(`🔗 /skin?username=Lostya`);
-    console.log(`🔗 /Lostya (JSON)`);
+    console.log(`🔗 /head?username=Lostya&size=128&randomuuid=test`);
+    console.log(`🔗 /skin?username=Lostya&randomuuid=12345`);
+    console.log(`🔗 /Lostya?randomuuid=abc (JSON)`);
 });
