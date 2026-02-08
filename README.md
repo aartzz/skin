@@ -47,7 +47,7 @@ The server will run on port `3040` by default.
 Returns the full texture data object containing URLs for the skin and cape.
 
 * **URL**: `/:username`
-* **Example**: `http://localhost:3000/ArtZabAZ`
+* **Example**: `https://skin.aartzz.pp.ua/ArtZabAZ`
 
 ### 2. Get Player Head (PNG)
 
@@ -59,18 +59,18 @@ Generates a 2D head image with the overlay layer.
 * `size` (optional): The pixel size for the image (width and height). Defaults to 64.
 
 
-* **Example**: `http://localhost:3000/head?username=ArtZabAZ&size=128`
+* **Example**: `https://skin.aartzz.pp.ua/head?username=ArtZabAZ&size=128`
 
 ### 3. Get Skin File (PNG)
 
 Fetches and returns the original skin texture file.
 
 * **URL**: `/skin?username=%name%`
-* **Example**: `http://localhost:3000/skin?username=ArtZabAZ`
+* **Example**: `https://skin.aartzz.pp.ua/skin?username=ArtZabAZ`
 
 ### 4. Get Cape File (PNG)
 
 Fetches and returns the player's cape texture if available.
 
 * **URL**: `/cape?username=%name%`
-* **Example**: `http://localhost:3000/cape?username=ArtZabAZ`
+* **Example**: `https://skin.aartzz.pp.ua/cape?username=ArtZabAZ`
